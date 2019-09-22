@@ -1,0 +1,23 @@
+syntax = "proto3";
+package validator;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "validator";
+
+extend google.protobuf.FieldOptions {
+  FieldValidator field = 20001;
+}
+
+message FieldValidator{
+    // Field value smaller than this value.
+    string lt = 1;
+    // Field value must be equal this value.
+    string eq = 2;
+    // Field value greater than this value.
+    string gt = 3;
+    // Field value not empty.
+    string required = 4;
+    // Field value empty default value.
+    string default = 5;
+}

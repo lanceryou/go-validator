@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
@@ -37,6 +38,9 @@ func main() {
 	g.BuildTypeNameMap()
 
 	g.GenerateAllFiles()
+	for i := 0; i < len(g.Response.File); i++ {
+		g.Response.File[i].Name = proto.String(strings.Replace(*g.Response.File[i].Name, ".pb.go", ".validator.pb.go", -1))
+	}
 
 	// Send back the results.
 	data, err = proto.Marshal(g.Response)

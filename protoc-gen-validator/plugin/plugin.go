@@ -92,6 +92,7 @@ func (v *validator) generateMessageValidator(variableName string, ccTypeName str
 		v.P(`return fmt.Errorf("validation error: `, variableName, ` must be not equal nil")`)
 		v.gen.Out()
 		v.P(`}`)
+		v.P()
 	}
 
 	// if err := variableName.Validate(); err != nil{
@@ -141,7 +142,7 @@ func (v *validator) generateArrayValidator(variableName string, ccTypeName strin
 			v.P(`return fmt.Errorf("validation error: `, field.Err, `")`)
 			v.gen.Out()
 			v.P(`}`)
-			v.gen.Out()
+			v.P()
 		}
 	}
 }
@@ -183,6 +184,7 @@ func (v *validator) generateFieldValidator(variableName string, ccTypeName strin
 			v.P(`return fmt.Errorf("validation error: `, field.Err, `")`)
 			v.gen.Out()
 			v.P(`}`)
+			v.P()
 		}
 	}
 }

@@ -31,7 +31,7 @@ func (v *validator) Generate(file *generator.FileDescriptor) {
 	v.gen.Reset()
 	for _, message := range file.MessageType {
 		if file.GetSyntax() == "proto3" {
-			v.generateProto3Validator(file, message)
+			v.generateProto3Validator(file, message, "")
 		}
 	}
 
@@ -42,12 +42,12 @@ func (v *validator) GenerateImports(file *generator.FileDescriptor) {}
 // P forwards to g.gen.P.
 func (g *validator) P(args ...interface{}) { g.gen.P(args...) }
 
-func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc *descriptor.DescriptorProto) {
+func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc *descriptor.DescriptorProto, prefix string) {
 	if !hasValidatorField(desc) {
 		return
 	}
 
-	ccTypeName := generator.CamelCase(desc.GetName())
+	ccTypeName := prefix + generator.CamelCase(desc.GetName())
 	v.P(`func (this *`, ccTypeName, `) Validate() error {`)
 	v.gen.In()
 	// support nested message
@@ -58,6 +58,10 @@ func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc
 	v.gen.Out()
 	v.P(`}`)
 	v.P()
+
+	for _, nested := range desc.NestedType {
+		v.generateProto3Validator(file, nested, ccTypeName+"_")
+	}
 }
 
 // number string 类型 按照type比较

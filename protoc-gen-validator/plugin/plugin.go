@@ -6,6 +6,7 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	valid "github.com/lanceryou/go-validator"
+	"strings"
 )
 
 func init() {
@@ -167,22 +168,22 @@ func (v *validator) generateFieldValidator(variableName string, fv *valid.FieldV
 
 	fields := []Filed{
 		{
-			Opt:   " < ",
+			Opt:   variableName + " < " + fv.Lt,
 			Value: fv.Lt,
 			Err:   fmt.Sprintf("%s be greater than %s", variableName, fv.Lt),
 		},
 		{
-			Opt:   " > ",
+			Opt:   variableName + " < " + fv.Gt,
 			Value: fv.Gt,
 			Err:   fmt.Sprintf("%s be less than %s", variableName, fv.Gt),
 		},
 		{
-			Opt:   " == ",
+			Opt:   or(variableName, " == ", fv.Eq),
 			Value: fv.Eq,
 			Err:   fmt.Sprintf("%s be not equal %s", variableName, fv.Eq),
 		},
 		{
-			Opt:   " != ",
+			Opt:   variableName + " != " + fv.Neq,
 			Value: fv.Neq,
 			Err:   fmt.Sprintf("%s be equal %s", variableName, fv.Gt),
 		},
@@ -190,7 +191,7 @@ func (v *validator) generateFieldValidator(variableName string, fv *valid.FieldV
 
 	for _, field := range fields {
 		if field.Value != "" {
-			v.P(`if !(`, variableName, field.Opt, field.Value, `) {`)
+			v.P(`if !(`, field.Opt, `) {`)
 			v.gen.In()
 			v.P(`return fmt.Errorf("validation error: `, field.Err, `")`)
 			v.gen.Out()
@@ -232,6 +233,20 @@ func getValidatorMessage(descs []*descriptor.DescriptorProto) (msgs []string) {
 		msgs = append(msgs, getValidatorMessage(msg.NestedType)...)
 	}
 	return
+}
+
+func or(variableName string, opt string, str string) (value string) {
+	all := strings.Split(strings.Replace(str, " ", "", -1), ",")
+
+	suffix := "||\n"
+	for i, s := range all {
+		if i == len(all)-1 {
+			suffix = ""
+		}
+		value += variableName + opt + s + suffix
+	}
+
+	return value
 }
 
 func contains(dst string, src []string) bool {

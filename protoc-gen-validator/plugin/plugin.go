@@ -29,9 +29,10 @@ func (v *validator) Init(g *generator.Generator) {
 func (v *validator) Generate(file *generator.FileDescriptor) {
 	// only generate validator code
 	v.gen.Reset()
+	validatorMessages := getValidatorMessage(file.MessageType)
 	for _, message := range file.MessageType {
 		if file.GetSyntax() == "proto3" {
-			v.generateProto3Validator(file, message, "")
+			v.generateProto3Validator(file, message, "", validatorMessages)
 		}
 	}
 
@@ -42,7 +43,7 @@ func (v *validator) GenerateImports(file *generator.FileDescriptor) {}
 // P forwards to g.gen.P.
 func (g *validator) P(args ...interface{}) { g.gen.P(args...) }
 
-func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc *descriptor.DescriptorProto, prefix string) {
+func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc *descriptor.DescriptorProto, prefix string, msgs []string) {
 	if !hasValidatorField(desc) {
 		return
 	}
@@ -52,7 +53,7 @@ func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc
 	v.gen.In()
 	// support nested message
 	for _, field := range desc.Field {
-		v.generateField(ccTypeName, file, field, desc)
+		v.generateField(field, desc, msgs)
 	}
 	v.P(`return nil`)
 	v.gen.Out()
@@ -60,14 +61,14 @@ func (v *validator) generateProto3Validator(file *generator.FileDescriptor, desc
 	v.P()
 
 	for _, nested := range desc.NestedType {
-		v.generateProto3Validator(file, nested, ccTypeName+"_")
+		v.generateProto3Validator(file, nested, ccTypeName+"_", msgs)
 	}
 }
 
 // number string 类型 按照type比较
 // message 类型 生成
 // reqeated 类型判断长度
-func (v *validator) generateField(ccTypeName string, file *generator.FileDescriptor, field *descriptor.FieldDescriptorProto, desc *descriptor.DescriptorProto) {
+func (v *validator) generateField(field *descriptor.FieldDescriptorProto, desc *descriptor.DescriptorProto, msgs []string) {
 	fieldValidator := getValidatorField(field)
 	if fieldValidator == nil {
 		return
@@ -80,36 +81,42 @@ func (v *validator) generateField(ccTypeName string, file *generator.FileDescrip
 	variableName := "this." + generator.CamelCase(*field.Name)
 	if isMessage(field) && !isRepeated(field) {
 		// validate nil and validate message if not nil
-		v.generateMessageValidator(variableName, ccTypeName, fieldValidator, desc)
+		v.generateMessageValidator(variableName, fieldValidator, contains(desc.GetName(), msgs))
 	} else if isRepeated(field) || isString(field) {
 		// validate length
-		v.generateArrayValidator(variableName, ccTypeName, fieldValidator)
+		v.generateArrayValidator(variableName, fieldValidator)
 	} else {
-		v.generateFieldValidator(variableName, ccTypeName, fieldValidator)
+		v.generateFieldValidator(variableName, fieldValidator)
 	}
 }
 
-func (v *validator) generateMessageValidator(variableName string, ccTypeName string, fv *valid.FieldValidator, desc *descriptor.DescriptorProto) {
-	if fv.Neq == "nil" {
-		v.P(`if !(`, variableName, `!=`, fv.Neq, `) {`)
-		v.gen.In()
-		v.P(`return fmt.Errorf("validation error: `, variableName, ` must be not equal nil")`)
-		v.gen.Out()
-		v.P(`}`)
-		v.P()
+func (v *validator) generateMessageValidator(variableName string, fv *valid.FieldValidator, isValidatorMessage bool) {
+	if fv.Neq != "nil" {
+		return
 	}
+
+	v.P(`if !(`, variableName, `!=`, fv.Neq, `) {`)
+	v.gen.In()
+	v.P(`return fmt.Errorf("validation error: `, variableName, ` must be not equal nil")`)
+	v.gen.Out()
+	v.P(`}`)
+	v.P()
 
 	// if err := variableName.Validate(); err != nil{
 	// 		return err
 	// }
-	/*v.P(`if err := `, variableName, `.Validate(); err != nil{`)
+	if !isValidatorMessage {
+		return
+	}
+	v.P(`if err := `, variableName, `.Validate(); err != nil{`)
 	v.gen.In()
 	v.P(`return err`)
 	v.gen.Out()
-	v.P(`}`)*/
+	v.P(`}`)
+	v.P()
 }
 
-func (v *validator) generateArrayValidator(variableName string, ccTypeName string, fv *valid.FieldValidator) {
+func (v *validator) generateArrayValidator(variableName string, fv *valid.FieldValidator) {
 	type Filed struct {
 		Opt   string
 		Value string
@@ -151,7 +158,7 @@ func (v *validator) generateArrayValidator(variableName string, ccTypeName strin
 	}
 }
 
-func (v *validator) generateFieldValidator(variableName string, ccTypeName string, fv *valid.FieldValidator) {
+func (v *validator) generateFieldValidator(variableName string, fv *valid.FieldValidator) {
 	type Filed struct {
 		Opt   string
 		Value string
@@ -213,6 +220,26 @@ func hasValidatorField(desc *descriptor.DescriptorProto) (has bool) {
 		}
 	}
 
+	return false
+}
+
+func getValidatorMessage(descs []*descriptor.DescriptorProto) (msgs []string) {
+	for _, msg := range descs {
+		if hasValidatorField(msg) {
+			msgs = append(msgs, *msg.Name)
+		}
+
+		msgs = append(msgs, getValidatorMessage(msg.NestedType)...)
+	}
+	return
+}
+
+func contains(dst string, src []string) bool {
+	for _, str := range src {
+		if str == dst {
+			return true
+		}
+	}
 	return false
 }
 

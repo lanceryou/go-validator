@@ -102,3 +102,10 @@ func (this *InnerMessage_NestMessage) Validate() error {
 	return nil
 }
 ```
+
+## Installing and using
+
+ go get github.com/lanceryou/go-validator/protoc-gen-govalidator
+ 
+  protoc --proto_path=${GOPATH}/src --proto_path=. \
+    --validator_out=plugins=go-validator:. *.proto

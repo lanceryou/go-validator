@@ -92,17 +92,14 @@ func (v *validator) generateField(field *descriptor.FieldDescriptorProto, desc *
 }
 
 func (v *validator) generateMessageValidator(variableName string, fv *valid.FieldValidator, isValidatorMessage bool) {
-	if fv.Neq != "nil" {
-		return
+	if fv.Neq == "nil" {
+		v.P(`if !(`, variableName, `!=`, fv.Neq, `) {`)
+		v.gen.In()
+		v.P(`return fmt.Errorf("validation error: `, variableName, ` must be not equal nil")`)
+		v.gen.Out()
+		v.P(`}`)
+		v.P()
 	}
-
-	v.P(`if !(`, variableName, `!=`, fv.Neq, `) {`)
-	v.gen.In()
-	v.P(`return fmt.Errorf("validation error: `, variableName, ` must be not equal nil")`)
-	v.gen.Out()
-	v.P(`}`)
-	v.P()
-
 	// if err := variableName.Validate(); err != nil{
 	// 		return err
 	// }

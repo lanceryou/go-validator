@@ -62,7 +62,7 @@ func (this *InnerMessage) Validate() error {
 		return fmt.Errorf("validation error: this.SomeInteger be greater than 100")
 	}
 
-	if !(this.SomeInteger < 0) {
+	if !(this.SomeInteger > 0) {
 		return fmt.Errorf("validation error: this.SomeInteger be less than 0")
 	}
 
@@ -70,7 +70,7 @@ func (this *InnerMessage) Validate() error {
 		return fmt.Errorf("validation error: this.SomeFloat be greater than 1")
 	}
 
-	if !(this.SomeFloat < 0) {
+	if !(this.SomeFloat > 0) {
 		return fmt.Errorf("validation error: this.SomeFloat be less than 0")
 	}
 
@@ -95,7 +95,7 @@ func (this *InnerMessage_NestMessage) Validate() error {
 		return fmt.Errorf("validation error: this.SomeInteger be greater than 100")
 	}
 
-	if !(this.SomeInteger < 0) {
+	if !(this.SomeInteger > 0) {
 		return fmt.Errorf("validation error: this.SomeInteger be less than 0")
 	}
 

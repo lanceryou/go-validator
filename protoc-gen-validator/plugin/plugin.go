@@ -170,7 +170,7 @@ func (v *validator) generateFieldValidator(variableName string, fv *valid.FieldV
 			Err:   fmt.Sprintf("%s be greater than %s", variableName, fv.Lt),
 		},
 		{
-			Opt:   variableName + " < " + fv.Gt,
+			Opt:   variableName + " > " + fv.Gt,
 			Value: fv.Gt,
 			Err:   fmt.Sprintf("%s be less than %s", variableName, fv.Gt),
 		},

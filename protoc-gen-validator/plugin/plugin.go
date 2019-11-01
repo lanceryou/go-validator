@@ -13,8 +13,6 @@ func init() {
 	generator.RegisterPlugin(new(validator))
 }
 
-// spex is an implementation of the Go protocol buffer compiler's
-// plugin architecture.  It generates bindings for shopee spex support.
 type validator struct {
 	gen *generator.Generator
 }
